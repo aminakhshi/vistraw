@@ -1,0 +1,10 @@
+
+*.png
+*.pdf
+*.pkl
+*.pickle
+*.csv
+*.mat
+.idea/
+.spyproject/
+results/
