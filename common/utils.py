@@ -15,8 +15,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import signal
+from pandas.api.types import CategoricalDtype
+from sklearn.preprocessing import LabelEncoder
+import pickle
+import os, sys
+import sklearn.preprocessing
+import sklearn, sklearn.neighbors
+import sklearn.linear_model, sklearn.ensemble
 rng = np.random.default_rng()
 
+
+def scale_fit(df, scaling = 'standard', **kw):
+    scaler_dict = {'standard':sklearn.preprocessing.StandardScaler(),
+                'minmax':sklearn.preprocessing.MinMaxScaler(),
+                'maxabs':sklearn.preprocessing.MaxAbsScaler(), 
+                'robust':sklearn.preprocessing.RobustScaler(),
+                'norm':sklearn.preprocessing.Normalizer(), 
+                'quantile':sklearn.preprocessing.QuantileTransformer(n_quantiles=100, random_state=0, output_distribution="normal"),
+                'power':sklearn.preprocessing.PowerTransformer()}
+    scaler = scaler_dict[scaling].fit(df)
+    data = scaler.transform(df)
+    if isinstance(df, pd.DataFrame):
+        data = pd.DataFrame(data, index=df.index, columns=df.columns)
+    return data
 
 def roll(data, shift):
     """shift vector
@@ -195,7 +216,22 @@ def p_corr(x, y, tau):
 
     return cr, cr_err
 
+def make_results(true_val, predict_val, le, output_class, **kw):
+    # true_val = y_test.copy(deep=True)
+    # output_class = 'event'
+    # predict_val = fold_prediction
+    cat_type = CategoricalDtype(categories=true_val.index.get_level_values(level=output_class).categories, ordered=True)
+    predict_val = np.round(predict_val).astype(int)
+    # predict_val = np.array(predict_val, dtype=np.int16)
+    # le = pickle.load(open(dir_path + experiment + '_labelEncoder.pkl', 'rb'))
+    predict_val = le.inverse_transform(predict_val)
+    predict_val = pd.Series(data=predict_val, index=true_val.index, name='Predicted Values', dtype=cat_type)
+    true_val = pd.Series(data=le.inverse_transform(true_val), index=true_val.index, name='True Values', dtype=cat_type)
+    results = pd.concat([true_val, predict_val], axis=1)
+    if 'save_path' in kw:
+        pickle.dump(results, open(kw['save_path'], 'wb'))
 
+    return results
 # =============================================================================
 # 
 # =============================================================================
