@@ -119,7 +119,7 @@ def plot_ovr_roc_curves(results, y_prob, le, output_class, kw=None):
         plt.close()
 
 
-def plot_prediction_distributions(results, output_class, miss_elects=None, kw=None):
+def plot_prediction_distributions(results, output_class, kw=None, miss_elects=None):
     labels = results.index.get_level_values(level=output_class).categories
     disp = sns.displot(data=results.reset_index(), x='Predicted Values', col='True Values', col_wrap=2,
                        hue='Predicted Values', fill=True)
@@ -164,8 +164,8 @@ def plot_prediction_distributions(results, output_class, miss_elects=None, kw=No
             except:
                 plt.savefig(os.path.join(kw.results_path, f'_{col}_predictionDistributions.png'), dpi=300, facecolor='w', bbox_inches='tight')
             plt.close()
-    miss_elects = [0,56,78,88,90,99]
-    if miss_elects:
+    if not miss_elects:
+        miss_elects = [0,56,78,88,90,99]
         for i in miss_elects:
             percent_correct[i] = 0
     percent_correct = percent_correct.sort_index()
@@ -174,9 +174,6 @@ def plot_prediction_distributions(results, output_class, miss_elects=None, kw=No
     plx_map_l = [0,65,66,67,68,69,70,71,72,0]
     plx_map_r = [58,25,27,28,29,30,31,32,80,0]
     plx_map_t = [0,17,1,2,18,19,20,21,23,58]
-
-from mpl_toolkits.axes_grid1 import host_subplot
-
     fig = plt.figure(num=1, figsize=(12, 10))
     ax = fig.add_subplot(111)
     # ax.set_xlabel('Predicted labels')
@@ -184,49 +181,34 @@ from mpl_toolkits.axes_grid1 import host_subplot
     disp = sns.heatmap(plx_map, annot=True, fmt='.2f', ax=ax, vmin=0, vmax=1,cbar=False, square=True, zorder=1)
     ax.xaxis.set_ticklabels(plx_map_b)
     ax.yaxis.set_ticklabels(plx_map_l)
-    ax2 = ax.twinx()
-    ax3 =ax.twiny()
-    ax2.set_xticklabel(xp, plx_map_t)
-    ax3.set_ytick(yp, plx_map_r)
+    # ax2 = ax.twinx()
+    # ax3 =ax.twiny()
+    # ax2.set_xticklabel(xp, plx_map_t)
+    # ax3.set_ytick(yp, plx_map_r)
     # disp0 = sns.heatmap(np.zeros_like(plx_map), ax=ax2,cbar=False, square=True, zorder=0, alpha=0)
     # ax2.yaxis_set_label(ax.yaxis_get_label())
     # ax2.set_xlim(ax.get_xlim())
-
-    secax = plt.gca().secondary_xaxis('top')
-    secay = plt.gca().secondary_yaxis('right')
-    secax.set_xlabel('Extraverted')
-    xb = ax.get_xticklabels(minor=False, which=None)
+    # secax = plt.gca().secondary_xaxis('top')
+    # secay = plt.gca().secondary_yaxis('right')
     xp = [t.get_position() for t in ax.get_xticklabels()]
     xp = [(t[0], 10) for t in xp]
     yp = [t.get_position() for t in ax.get_yticklabels()]
     yp = [(10, t[1]) for t in yp]
-    secax.set_xtick(xp, plx_map_t)
+    # secax.set_xtick(xp, plx_map_t)
 
-    secax = ax.secondary_xaxis('top', functions=(xp, plx_map_t))
-    for i, val in xb:
-        print (i, val)
-    ax.get_yticklabels(minor=False, which=None)
-    secay.set_xticklabels(minor=False, which=None)
-
-    secay.get_xticklabels(minor=False, which=None)
-    ax.tick_params(labeltop=True, labelright=True)
-    ax.xaxis.set_ticklabels(plx_map_r)
-    ax.yaxis.set_ticklabels(plx_map_t)
-    xlbl = ax.xaxis.get_label()
-    xlbl.get_position()
-
-
+    # ax.get_yticklabels(minor=False, which=None)
+    # secay.set_xticklabels(minor=False, which=None)
+    # ax.tick_params(labeltop=True, labelright=True)
     # ax1 = ax.twinx()
     # ax1.yaxis.set_ticklabels(plx_map_r)
     plt.show()
     if hasattr(kw, 'save_output'):
         try:
-            plt.savefig(os.path.join(kw.results_path, kw.experiment+'_fold-'+kw.fold+'_confusionMatrix.png'), dpi=300, facecolor='w', bbox_inches='tight')
+            plt.savefig(os.path.join(kw.results_path, '_fold-'+kw.fold+f'_{col}_Probability_matrix.png'), dpi=300, facecolor='w', bbox_inches='tight')
         except:
-            plt.savefig(os.path.join(kw.results_path, kw.experiment+'_confusionMatrix.png'), dpi=300, facecolor='w', bbox_inches='tight')
+            plt.savefig(os.path.join(kw.results_path,f'_{col}_Probability_matrix.png'), dpi=300, facecolor='w', bbox_inches='tight')
         plt.close()
 
-    return 
 # def plot_summary_plot(shap_values, samples, plot_type=None, class_names= None, le=None, kw=None):
 #     if not class_names:
 #         class_names = le.inverse_transform(range(len(set(y_test)))).tolist()

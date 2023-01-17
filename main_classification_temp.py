@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument('--scaling', type=str, default=None, choices= param_dict.scalers, help='sklearn preprocessing scaler to use')
     parser.add_argument('--date', type=str, default=None, help='input date to read results')
     args = parser.parse_args()
-    params = param_dict.params(args, cv=True, k_folds=5, n_epoch=30, batch_size=16)
+    params = param_dict.params(args, cv=True, k_folds=5, n_epoch=10, batch_size=64)
     seed = params.seed
     electrodes = [i for i in range(100) if i not in [0,56,78,88,90,99]]
     X  = []
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     X = X.iloc[:,450:551]
     X, y = shuffle(X, y, random_state=seed)
     
-    y = shuffle(y)
+    # y = shuffle(y)
 
     # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0, train_size=.75)
     kfold = sklearn.model_selection.StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
@@ -118,11 +118,11 @@ if __name__ == "__main__":
         else:
             network = modlib.tsCNN1(in_channels=1, n_classes=1, n_channels=2,
                                    kernel=3, stride=1, seed=0)
-            model = modlib.ModelClass(network, device='cuda', batch_size=32,
-                                      n_epoch=20, seed=0)
+            model = modlib.ModelClass(network, device=params.device, batch_size=params.batch_size,
+                                      n_epoch=params.n_epoch, seed=params.seed)
             
             model.fit(X_train, y_train)
-            fold_prediction = model.predict(X_test)
+            # fold_prediction = model.predict(X_test)
             fold_prediction = model.predict_proba(X_test)
             test_acc = metrics.accuracy_score(y_test, np.round(fold_prediction))
             avg_per_class_acc = metrics.balanced_accuracy_score(y_test, np.round(fold_prediction))
@@ -143,8 +143,20 @@ if __name__ == "__main__":
             visualization.plot_prediction_distributions(fold_results, params.output_class, params)
         
         results[fold] = fold_results        
-
-
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter("torchlogs/")
+Net = modlib.tsCNN1(in_channels=1, n_classes=1, n_channels=2,
+                       kernel=3, stride=1, seed=0)
+dataset = modlib.DataWrapper(X_test.values[:, None, :], np.zeros(len(X)))
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=params.batch_size)
+for batch_idx, batch in enumerate(dataloader):
+    if batch_idx == 1:
+        input_x, input_y = tuple(t.to('cpu') for t in batch)
+    break
+writer.add_graph(Net, input_x)
+writer.close()
+X = X.values
+dataset = DataWrapper(X[:, None, :], np.zeros(len(X)))
 
 
 def evaluate(dir_path, results_path, model_name, seed=0, scaled=True, cross_validation=None):
